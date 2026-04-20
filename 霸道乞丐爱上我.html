@@ -1,0 +1,2071 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>霸道乞丐爱上我</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;500;700;900&family=Long+Cang&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pink-soft: #ffd8e4;
+    --pink-mid: #ff9ebd;
+    --pink-hot: #ff4d87;
+    --magenta: #c2185b;
+    --gold: #e8c547;
+    --cardboard: #c9a373;
+    --cardboard-dark: #8b6b3d;
+    --ink: #2a1a1f;
+    --paper: #fdf6ec;
+    --shadow: rgba(42, 26, 31, 0.35);
+    --bg-current: linear-gradient(180deg, #ffc8d6 0%, #ffd8e4 50%, #ffe4ec 100%);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    font-family: "Noto Serif SC", serif;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background: var(--bg-current);
+    transition: background 1.2s ease;
+    position: relative;
+  }
+
+  /* 颗粒噪点纹理 */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 25% 30%, rgba(255,255,255,0.3) 0%, transparent 50%),
+      radial-gradient(circle at 75% 70%, rgba(255,77,135,0.15) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+    opacity: 0.18;
+    pointer-events: none;
+    z-index: 2;
+    mix-blend-mode: multiply;
+  }
+
+  /* 深色反转模式 */
+  body.dark-mode {
+    --bg-current: linear-gradient(180deg, #1a0e1a 0%, #2d0a1f 50%, #0f0515 100%);
+  }
+  body.dark-mode::before {
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(232,197,71,0.12) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(194,24,91,0.25) 0%, transparent 60%);
+  }
+
+  #game {
+    position: relative;
+    z-index: 10;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 24px 20px;
+  }
+
+  /* 顶部状态栏 */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .title-logo {
+    font-family: "ZCOOL KuaiLe", "Ma Shan Zheng", serif;
+    font-size: 22px;
+    color: var(--magenta);
+    letter-spacing: 2px;
+    text-shadow: 2px 2px 0 var(--pink-soft), 3px 3px 0 rgba(0,0,0,0.1);
+    transition: color 0.6s;
+  }
+  body.dark-mode .title-logo { color: var(--gold); text-shadow: 2px 2px 0 #3a1025, 3px 3px 0 rgba(0,0,0,0.4); }
+
+  .meter-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.5);
+    border: 2px solid var(--magenta);
+    border-radius: 20px;
+    padding: 6px 14px;
+    backdrop-filter: blur(4px);
+    transition: all 0.6s;
+  }
+  body.dark-mode .meter-wrap { background: rgba(0,0,0,0.4); border-color: var(--gold); }
+
+  .meter-label {
+    font-family: "ZCOOL KuaiLe", serif;
+    font-size: 13px;
+    color: var(--magenta);
+    white-space: nowrap;
+  }
+  body.dark-mode .meter-label { color: var(--gold); }
+
+  .meter-bar {
+    width: 120px;
+    height: 10px;
+    background: #fff;
+    border: 1.5px solid var(--ink);
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+  }
+  .meter-fill {
+    height: 100%;
+    width: 40%;
+    background: linear-gradient(90deg, var(--pink-mid), var(--pink-hot));
+    transition: width 0.6s cubic-bezier(.25,1.5,.5,1);
+    position: relative;
+  }
+  .meter-fill::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.5) 50%, transparent 100%);
+    animation: shine 2s infinite;
+  }
+  @keyframes shine {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
+  }
+
+  /* 主舞台 */
+  .stage {
+    flex: 1;
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 3px solid var(--ink);
+    background: var(--bg-scene, linear-gradient(180deg, #87ceeb 0%, #b8d8e6 60%, #8b7355 100%));
+    box-shadow: 0 10px 40px var(--shadow), inset 0 0 60px rgba(0,0,0,0.2);
+    transition: background 1s;
+  }
+
+  /* 场景背景层 */
+  .scene-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+  .scene-bg svg { width: 100%; height: 100%; display: block; }
+
+  /* 人物立绘容器 */
+  .character {
+    position: absolute;
+    bottom: 0;
+    right: 5%;
+    height: 85%;
+    z-index: 2;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: transform 0.8s cubic-bezier(.25,1.2,.5,1), opacity 0.6s;
+    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
+  }
+  .character.active {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  .character.shake {
+    animation: shake 0.5s;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-8px) rotate(-1deg); }
+    40% { transform: translateX(8px) rotate(1deg); }
+    60% { transform: translateX(-6px) rotate(-0.5deg); }
+    80% { transform: translateX(6px) rotate(0.5deg); }
+  }
+
+  .character svg { height: 100%; width: auto; display: block; }
+
+  /* 场景名牌 */
+  .scene-tag {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 3;
+    background: rgba(42,26,31,0.85);
+    color: var(--paper);
+    font-family: "ZCOOL KuaiLe", serif;
+    padding: 6px 14px;
+    border-radius: 0 16px 0 16px;
+    font-size: 14px;
+    letter-spacing: 2px;
+    border-left: 3px solid var(--pink-hot);
+  }
+  body.dark-mode .scene-tag { border-left-color: var(--gold); }
+
+  /* 对话盒 */
+  .dialog-box {
+    position: absolute;
+    left: 20px;
+    right: 20px;
+    bottom: 20px;
+    z-index: 4;
+    background: rgba(253, 246, 236, 0.96);
+    border: 3px solid var(--ink);
+    border-radius: 14px;
+    padding: 18px 22px 22px;
+    box-shadow: 0 6px 0 var(--ink), 0 6px 20px rgba(0,0,0,0.3);
+    backdrop-filter: blur(8px);
+    min-height: 140px;
+    transition: background 0.6s, border-color 0.6s;
+  }
+  body.dark-mode .dialog-box {
+    background: rgba(20, 10, 20, 0.92);
+    border-color: var(--gold);
+    box-shadow: 0 6px 0 var(--gold), 0 6px 20px rgba(0,0,0,0.5);
+    color: var(--paper);
+  }
+
+  .speaker {
+    display: inline-block;
+    font-family: "ZCOOL KuaiLe", serif;
+    font-size: 18px;
+    color: var(--magenta);
+    background: var(--pink-soft);
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+    border: 2px solid var(--magenta);
+    transform: translateY(-30px);
+    position: relative;
+    top: -6px;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  body.dark-mode .speaker {
+    color: var(--gold);
+    background: #2d0a1f;
+    border-color: var(--gold);
+    box-shadow: 2px 2px 0 #000;
+  }
+
+  .dialog-text {
+    font-size: 18px;
+    line-height: 1.8;
+    min-height: 60px;
+    font-weight: 500;
+  }
+  .dialog-text .typed-cursor {
+    display: inline-block;
+    width: 3px;
+    height: 1em;
+    background: var(--magenta);
+    vertical-align: text-bottom;
+    animation: blink 0.8s steps(2) infinite;
+    margin-left: 2px;
+  }
+  body.dark-mode .dialog-text .typed-cursor { background: var(--gold); }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .dialog-next {
+    position: absolute;
+    right: 20px;
+    bottom: 16px;
+    font-family: "ZCOOL KuaiLe", serif;
+    font-size: 14px;
+    color: var(--magenta);
+    opacity: 0;
+    transition: opacity 0.3s;
+    animation: bobbing 1.2s ease-in-out infinite;
+  }
+  .dialog-next.show { opacity: 1; }
+  body.dark-mode .dialog-next { color: var(--gold); }
+  @keyframes bobbing {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+
+  /* 选项按钮 */
+  .choices {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: min(500px, 90%);
+    padding: 20px;
+    background: rgba(253, 246, 236, 0.95);
+    border: 3px solid var(--ink);
+    border-radius: 16px;
+    box-shadow: 0 8px 0 var(--ink), 0 8px 30px rgba(0,0,0,0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s;
+  }
+  .choices.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  body.dark-mode .choices {
+    background: rgba(20, 10, 20, 0.95);
+    border-color: var(--gold);
+    box-shadow: 0 8px 0 var(--gold), 0 8px 30px rgba(0,0,0,0.5);
+  }
+
+  .choices-title {
+    font-family: "ZCOOL KuaiLe", serif;
+    text-align: center;
+    color: var(--magenta);
+    font-size: 16px;
+    margin-bottom: 4px;
+    letter-spacing: 3px;
+  }
+  body.dark-mode .choices-title { color: var(--gold); }
+
+  .choice-btn {
+    background: #fff;
+    color: var(--ink);
+    border: 2.5px solid var(--ink);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-family: "Noto Serif SC", serif;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    box-shadow: 3px 3px 0 var(--ink);
+    position: relative;
+  }
+  .choice-btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0 var(--ink);
+    background: var(--pink-soft);
+  }
+  .choice-btn:active {
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0 var(--ink);
+  }
+  body.dark-mode .choice-btn {
+    background: #1a0a1a;
+    color: var(--paper);
+    border-color: var(--gold);
+    box-shadow: 3px 3px 0 var(--gold);
+  }
+  body.dark-mode .choice-btn:hover { background: #3d1430; }
+
+  .choice-btn::before {
+    content: "❥";
+    color: var(--pink-hot);
+    margin-right: 8px;
+    font-size: 14px;
+  }
+  body.dark-mode .choice-btn::before {
+    content: "✦";
+    color: var(--gold);
+  }
+
+  /* 浮动反馈提示 */
+  .floater {
+    position: absolute;
+    z-index: 20;
+    font-family: "ZCOOL KuaiLe", serif;
+    font-size: 22px;
+    font-weight: 700;
+    pointer-events: none;
+    animation: float-up 1.4s ease-out forwards;
+  }
+  .floater.up { color: #ff4d87; text-shadow: 0 0 10px #ffc8d6, 2px 2px 0 #fff; }
+  .floater.down { color: #555; text-shadow: 0 0 8px #aaa, 2px 2px 0 #fff; }
+  @keyframes float-up {
+    0% { opacity: 0; transform: translateY(0) scale(0.6); }
+    20% { opacity: 1; transform: translateY(-10px) scale(1.2); }
+    100% { opacity: 0; transform: translateY(-80px) scale(1); }
+  }
+
+  /* 开场/结局覆盖层 */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background: linear-gradient(135deg, #ffd0e0 0%, #ffb3d9 50%, #ff80b3 100%);
+    transition: opacity 0.8s, transform 0.8s;
+  }
+  .overlay.dark {
+    background: radial-gradient(ellipse at center, #3d0a2a 0%, #0f0515 70%, #000 100%);
+  }
+  .overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .overlay h1 {
+    font-family: "ZCOOL KuaiLe", serif;
+    font-size: clamp(40px, 8vw, 72px);
+    color: var(--magenta);
+    text-shadow:
+      3px 3px 0 #fff,
+      6px 6px 0 var(--ink),
+      8px 8px 20px rgba(0,0,0,0.4);
+    letter-spacing: 6px;
+    margin-bottom: 16px;
+    animation: title-in 1.2s ease-out;
+  }
+  .overlay.dark h1 {
+    color: var(--gold);
+    text-shadow:
+      3px 3px 0 #000,
+      6px 6px 0 var(--magenta),
+      0 0 30px rgba(232, 197, 71, 0.5);
+  }
+  @keyframes title-in {
+    0% { opacity: 0; transform: translateY(-30px) scale(0.8); letter-spacing: 20px; }
+    100% { opacity: 1; transform: translateY(0) scale(1); letter-spacing: 6px; }
+  }
+
+  .overlay .subtitle {
+    font-family: "Long Cang", "Ma Shan Zheng", serif;
+    font-size: 22px;
+    color: var(--ink);
+    margin-bottom: 40px;
+    opacity: 0.85;
+    text-align: center;
+    max-width: 80%;
+    line-height: 1.8;
+  }
+  .overlay.dark .subtitle { color: var(--pink-soft); }
+
+  .overlay .ending-body {
+    font-family: "Noto Serif SC", serif;
+    font-size: 17px;
+    line-height: 2;
+    max-width: 560px;
+    text-align: center;
+    margin: 0 auto 32px;
+    color: var(--ink);
+    padding: 0 20px;
+  }
+  .overlay.dark .ending-body { color: #f5e0d0; }
+
+  .start-btn {
+    font-family: "ZCOOL KuaiLe", serif;
+    font-size: 22px;
+    padding: 16px 48px;
+    border: 3px solid var(--ink);
+    background: #fff;
+    color: var(--magenta);
+    border-radius: 30px;
+    cursor: pointer;
+    letter-spacing: 6px;
+    box-shadow: 4px 4px 0 var(--ink), 0 0 40px rgba(255,77,135,0.5);
+    transition: all 0.2s;
+    animation: pulse 2s infinite;
+  }
+  .start-btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 var(--ink), 0 0 60px rgba(255,77,135,0.7);
+  }
+  .overlay.dark .start-btn {
+    background: #1a0515;
+    color: var(--gold);
+    border-color: var(--gold);
+    box-shadow: 4px 4px 0 var(--gold), 0 0 40px rgba(232, 197, 71, 0.4);
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+  }
+
+  .sparkle {
+    position: absolute;
+    color: #fff;
+    font-size: 24px;
+    pointer-events: none;
+    animation: sparkle-in 2s infinite;
+  }
+  @keyframes sparkle-in {
+    0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); }
+    50% { opacity: 1; transform: scale(1.2) rotate(180deg); }
+  }
+
+  /* 反转闪屏 */
+  .flash {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+    background: #fff;
+    pointer-events: none;
+    opacity: 0;
+  }
+  .flash.trigger { animation: flash-anim 1.5s ease-out; }
+  @keyframes flash-anim {
+    0% { opacity: 0; background: #fff; }
+    10% { opacity: 1; background: #fff; }
+    30% { opacity: 0.3; background: #ff4d87; }
+    60% { opacity: 0.8; background: #000; }
+    100% { opacity: 0; background: #000; }
+  }
+
+  /* 屏幕底部按钮 */
+  .sound-toggle {
+    background: rgba(255,255,255,0.6);
+    border: 2px solid var(--magenta);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .sound-toggle:hover { transform: scale(1.1); }
+  body.dark-mode .sound-toggle { background: rgba(0,0,0,0.5); border-color: var(--gold); color: var(--gold); }
+
+  /* 移动端 */
+  @media (max-width: 640px) {
+    #game { padding: 12px 10px; }
+    .title-logo { font-size: 16px; letter-spacing: 1px; }
+    .meter-bar { width: 80px; }
+    .meter-label { font-size: 11px; }
+    .dialog-text { font-size: 15px; }
+    .speaker { font-size: 15px; }
+    .choice-btn { font-size: 14px; padding: 12px 14px; }
+    .overlay h1 { letter-spacing: 3px; }
+    .scene-tag { font-size: 11px; }
+    .character { right: 2%; height: 70%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="flash" id="flash"></div>
+
+<!-- 开场覆盖层 -->
+<div class="overlay" id="startOverlay">
+  <div class="sparkle" style="top: 20%; left: 15%;">✦</div>
+  <div class="sparkle" style="top: 30%; right: 20%; animation-delay: 0.5s;">✧</div>
+  <div class="sparkle" style="bottom: 25%; left: 25%; animation-delay: 1s;">❀</div>
+  <div class="sparkle" style="bottom: 35%; right: 15%; animation-delay: 1.5s;">✦</div>
+  <h1>霸道乞丐爱上我</h1>
+  <div class="subtitle">
+    ——一个关于桥洞、纸板、和命运的故事——<br>
+    <span style="font-size: 15px; opacity: 0.7;">（慎入，含甜宠与黑化双重暴击）</span>
+  </div>
+  <button class="start-btn" id="startBtn">点 击 开 始</button>
+</div>
+
+<!-- 结局覆盖层 -->
+<div class="overlay hidden" id="endingOverlay">
+  <h1 id="endingTitle"></h1>
+  <div class="subtitle" id="endingSubtitle"></div>
+  <div class="ending-body" id="endingBody"></div>
+  <button class="start-btn" id="restartBtn">再 来 一 次</button>
+</div>
+
+<div id="game">
+  <div class="topbar">
+    <div class="title-logo">霸道乞丐爱上我</div>
+    <div class="meter-wrap">
+      <span class="meter-label">❤ 沦陷度</span>
+      <div class="meter-bar"><div class="meter-fill" id="meterFill"></div></div>
+      <button class="sound-toggle" id="muteBtn" title="静音">🔔</button>
+    </div>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="scene-bg" id="sceneBg"></div>
+    <div class="scene-tag" id="sceneTag">第一幕・雨夜初遇</div>
+    <div class="character" id="character"></div>
+
+    <div class="dialog-box" id="dialogBox">
+      <div class="speaker" id="speaker">???</div>
+      <div class="dialog-text" id="dialogText"></div>
+      <div class="dialog-next" id="dialogNext">点击继续 ▶</div>
+    </div>
+
+    <div class="choices" id="choices">
+      <div class="choices-title">❀ 你要怎么回应？ ❀</div>
+    </div>
+  </div>
+</div>
+
+<!-- 背景音效（可选，用 WebAudio 生成） -->
+<script>
+/* =========================================================================
+   人物立绘 SVG（动漫风，可替换）
+   ========================================================================= */
+const CHARACTERS = {
+  // 男主：破衣烂衫但帅气
+  male_normal: `
+<svg viewBox="0 0 300 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="hairGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="60%" stop-color="#2d2d4a"/>
+      <stop offset="100%" stop-color="#0d0d1a"/>
+    </linearGradient>
+    <linearGradient id="skinGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fde5d0"/>
+      <stop offset="100%" stop-color="#e8c8a8"/>
+    </linearGradient>
+    <linearGradient id="clothGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4a3828"/>
+      <stop offset="100%" stop-color="#2b1f15"/>
+    </linearGradient>
+    <linearGradient id="scarfGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8b0000"/>
+      <stop offset="100%" stop-color="#4d0000"/>
+    </linearGradient>
+    <pattern id="patch" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
+      <rect width="14" height="14" fill="#4a3828"/>
+      <path d="M0 7 L14 7 M7 0 L7 14" stroke="#2b1f15" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <!-- 身体阴影 -->
+  <ellipse cx="150" cy="490" rx="90" ry="8" fill="rgba(0,0,0,0.2)"/>
+
+  <!-- 脖子 -->
+  <path d="M130 230 Q130 250 135 270 L165 270 Q170 250 170 230 Z" fill="url(#skinGrad)"/>
+  <path d="M130 245 Q150 255 170 245" stroke="#c89a7a" stroke-width="1" fill="none" opacity="0.6"/>
+
+  <!-- 肩膀和上衣（破烂） -->
+  <path d="M80 290 Q75 330 70 380 L70 500 L230 500 L230 380 Q225 330 220 290
+           Q210 260 180 255 L120 255 Q90 260 80 290 Z" fill="url(#clothGrad)"/>
+
+  <!-- 补丁 -->
+  <path d="M95 340 L125 335 L130 370 L100 375 Z" fill="url(#patch)" opacity="0.9" stroke="#1a1208" stroke-width="1.5" stroke-dasharray="3,2"/>
+  <path d="M170 380 L205 378 L208 410 L175 413 Z" fill="#6b4423" opacity="0.85" stroke="#1a1208" stroke-width="1.5" stroke-dasharray="3,2"/>
+
+  <!-- 破洞 -->
+  <path d="M140 400 L155 398 L158 415 L142 418 Z" fill="#1a0a08"/>
+  <path d="M200 450 L215 455 L213 470 L198 465 Z" fill="#1a0a08"/>
+
+  <!-- 破烂围巾 -->
+  <path d="M100 255 Q110 270 105 295 L95 320 Q90 330 100 335 L105 340 Q115 330 118 300 L120 275 Z
+           M180 255 Q185 265 195 290 L205 315 Q210 325 200 332 L190 335 Q185 325 185 300 L182 278 Z"
+        fill="url(#scarfGrad)" opacity="0.85"/>
+  <path d="M100 335 L90 355 L95 350 L88 370 L100 355 Z" fill="url(#scarfGrad)" opacity="0.6"/>
+  <path d="M200 332 L210 352 L205 348 L212 368 L200 353 Z" fill="url(#scarfGrad)" opacity="0.6"/>
+
+  <!-- 脸 -->
+  <path d="M105 165 Q100 215 130 238 Q150 250 170 238 Q200 215 195 165
+           Q195 120 175 105 Q150 95 125 105 Q105 120 105 165 Z" fill="url(#skinGrad)"/>
+
+  <!-- 下颌阴影 -->
+  <path d="M115 210 Q150 235 185 210" stroke="#c89a7a" stroke-width="1.5" fill="none" opacity="0.5"/>
+
+  <!-- 头发（凌乱但帅气） -->
+  <path d="M95 165 Q85 100 115 75 Q140 60 160 65 Q200 70 210 110
+           Q215 145 208 175 L195 155 Q185 135 175 145 Q165 160 160 150
+           Q140 135 130 155 Q115 170 100 175 Z" fill="url(#hairGrad)"/>
+
+  <!-- 前额碎发（遮住一只眼） -->
+  <path d="M108 140 Q118 160 140 175 L160 170 Q155 155 145 145 Z" fill="url(#hairGrad)"/>
+  <path d="M155 130 Q165 145 180 160 L195 155 Q190 140 175 130 Z" fill="url(#hairGrad)"/>
+  <path d="M135 125 L145 175 L152 170 L142 120 Z" fill="#0d0d1a"/>
+
+  <!-- 耳朵和耳环 -->
+  <path d="M97 180 Q92 195 100 205 L108 200 Z" fill="url(#skinGrad)"/>
+  <circle cx="99" cy="203" r="2.5" fill="#e8c547" stroke="#b89620" stroke-width="0.5"/>
+
+  <!-- 眼睛（右眼可见，左眼被头发遮住） -->
+  <!-- 左眼（被发遮） -->
+  <path d="M125 175 Q135 175 140 178" stroke="#0d0d1a" stroke-width="2" fill="none" opacity="0.3"/>
+
+  <!-- 右眼（锐利） -->
+  <ellipse cx="175" cy="180" rx="10" ry="6" fill="#fff"/>
+  <ellipse cx="175" cy="180" rx="6" ry="6" fill="#2a4a6b"/>
+  <ellipse cx="176" cy="179" rx="4" ry="5" fill="#1a2a3d"/>
+  <circle cx="173" cy="178" r="1.5" fill="#fff"/>
+  <!-- 上眼线（锐利) -->
+  <path d="M163 175 Q175 170 188 176" stroke="#0d0d1a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M186 174 L192 170" stroke="#0d0d1a" stroke-width="2" stroke-linecap="round"/>
+  <!-- 睫毛 -->
+  <path d="M166 172 L165 168 M172 170 L171 165 M180 171 L181 166" stroke="#0d0d1a" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- 眉毛（挑眉） -->
+  <path d="M165 160 Q175 156 190 162" stroke="#0d0d1a" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+  <!-- 鼻子 -->
+  <path d="M155 185 Q152 200 148 210 Q150 213 155 211" stroke="#c89a7a" stroke-width="1.2" fill="none"/>
+
+  <!-- 嘴（坏笑） -->
+  <path d="M140 220 Q150 225 160 221" stroke="#8b4033" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M160 221 Q162 218 164 222" stroke="#8b4033" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+  <!-- 脸上小划痕（沧桑感） -->
+  <path d="M120 195 L127 200" stroke="#8b4033" stroke-width="1" opacity="0.5"/>
+
+  <!-- 手臂（单手插袋或持物）- 简化 -->
+  <path d="M75 330 Q60 360 65 420 Q68 450 80 460 L92 455 Q85 410 85 370 Z" fill="url(#clothGrad)"/>
+  <path d="M225 330 Q240 360 235 420 Q232 450 220 460 L208 455 Q215 410 215 370 Z" fill="url(#clothGrad)"/>
+
+  <!-- 手 -->
+  <ellipse cx="85" cy="460" rx="10" ry="12" fill="url(#skinGrad)"/>
+  <ellipse cx="215" cy="460" rx="10" ry="12" fill="url(#skinGrad)"/>
+
+  <!-- 破碗（左手托着） -->
+  <ellipse cx="85" cy="465" rx="22" ry="5" fill="#6b4423"/>
+  <path d="M63 465 Q63 480 85 482 Q107 480 107 465 Z" fill="#4a2f18" stroke="#2b1f15" stroke-width="1"/>
+  <path d="M66 468 L68 472 M104 468 L102 472" stroke="#2b1f15" stroke-width="0.8"/>
+
+</svg>`,
+
+  // 男主：邪魅（笑）
+  male_smirk: `
+<svg viewBox="0 0 300 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="hairGrad2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="60%" stop-color="#2d2d4a"/>
+      <stop offset="100%" stop-color="#0d0d1a"/>
+    </linearGradient>
+    <linearGradient id="skinGrad2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fde5d0"/>
+      <stop offset="100%" stop-color="#e8c8a8"/>
+    </linearGradient>
+    <linearGradient id="clothGrad2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4a3828"/>
+      <stop offset="100%" stop-color="#2b1f15"/>
+    </linearGradient>
+    <linearGradient id="scarfGrad2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#a00000"/>
+      <stop offset="100%" stop-color="#5a0000"/>
+    </linearGradient>
+    <radialGradient id="aura" cx="0.5" cy="0.5">
+      <stop offset="0%" stop-color="#ff4d87" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#ff4d87" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- 粉红氛围光 -->
+  <circle cx="150" cy="180" r="140" fill="url(#aura)"/>
+
+  <ellipse cx="150" cy="490" rx="90" ry="8" fill="rgba(0,0,0,0.2)"/>
+  <path d="M130 230 Q130 250 135 270 L165 270 Q170 250 170 230 Z" fill="url(#skinGrad2)"/>
+  <path d="M80 290 Q75 330 70 380 L70 500 L230 500 L230 380 Q225 330 220 290
+           Q210 260 180 255 L120 255 Q90 260 80 290 Z" fill="url(#clothGrad2)"/>
+
+  <!-- 补丁 -->
+  <path d="M95 340 L125 335 L130 370 L100 375 Z" fill="#6b4423" opacity="0.9" stroke="#1a1208" stroke-width="1.5" stroke-dasharray="3,2"/>
+  <path d="M170 380 L205 378 L208 410 L175 413 Z" fill="#5a3a1a" opacity="0.85" stroke="#1a1208" stroke-width="1.5" stroke-dasharray="3,2"/>
+
+  <!-- 围巾 -->
+  <path d="M100 255 Q110 270 105 295 L95 320 Q90 330 100 335 L105 340 Q115 330 118 300 L120 275 Z
+           M180 255 Q185 265 195 290 L205 315 Q210 325 200 332 L190 335 Q185 325 185 300 L182 278 Z"
+        fill="url(#scarfGrad2)" opacity="0.85"/>
+
+  <!-- 脸 -->
+  <path d="M105 165 Q100 215 130 238 Q150 250 170 238 Q200 215 195 165
+           Q195 120 175 105 Q150 95 125 105 Q105 120 105 165 Z" fill="url(#skinGrad2)"/>
+
+  <!-- 头发 -->
+  <path d="M95 165 Q85 100 115 75 Q140 60 160 65 Q200 70 210 110
+           Q215 145 208 175 L195 155 Q185 135 175 145 Q165 160 160 150
+           Q140 135 130 155 Q115 170 100 175 Z" fill="url(#hairGrad2)"/>
+  <path d="M108 140 Q118 160 140 175 L160 170 Q155 155 145 145 Z" fill="url(#hairGrad2)"/>
+  <path d="M155 130 Q165 145 180 160 L195 155 Q190 140 175 130 Z" fill="url(#hairGrad2)"/>
+  <path d="M135 125 L145 175 L152 170 L142 120 Z" fill="#0d0d1a"/>
+
+  <!-- 耳朵耳环 -->
+  <path d="M97 180 Q92 195 100 205 L108 200 Z" fill="url(#skinGrad2)"/>
+  <circle cx="99" cy="203" r="2.5" fill="#e8c547"/>
+
+  <!-- 眼睛（眯起+邪笑） -->
+  <path d="M165 178 Q175 175 188 179" stroke="#0d0d1a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M166 182 Q175 184 187 183" stroke="#0d0d1a" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- 一丝瞳孔 -->
+  <ellipse cx="175" cy="181" rx="3" ry="2" fill="#2a4a6b" opacity="0.9"/>
+
+  <!-- 眉毛（挑得更高） -->
+  <path d="M165 158 Q175 152 192 160" stroke="#0d0d1a" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+  <!-- 鼻 -->
+  <path d="M155 185 Q152 200 148 210 Q150 213 155 211" stroke="#c89a7a" stroke-width="1.2" fill="none"/>
+
+  <!-- 嘴（邪笑，一角上扬） -->
+  <path d="M135 220 Q150 232 168 218" stroke="#8b4033" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M168 218 L173 213" stroke="#8b4033" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- 脸红 -->
+  <ellipse cx="120" cy="205" rx="8" ry="4" fill="#ff9ebd" opacity="0.5"/>
+  <ellipse cx="180" cy="205" rx="8" ry="4" fill="#ff9ebd" opacity="0.5"/>
+
+  <!-- 手 -->
+  <path d="M75 330 Q60 360 65 420 Q68 450 80 460 L92 455 Q85 410 85 370 Z" fill="url(#clothGrad2)"/>
+  <path d="M225 330 Q240 360 235 420 Q232 450 220 460 L208 455 Q215 410 215 370 Z" fill="url(#clothGrad2)"/>
+  <ellipse cx="85" cy="460" rx="10" ry="12" fill="url(#skinGrad2)"/>
+  <ellipse cx="215" cy="460" rx="10" ry="12" fill="url(#skinGrad2)"/>
+
+  <!-- 手指夹着一朵野花（而不是破碗） -->
+  <g transform="translate(215,455)">
+    <path d="M0 0 L2 -30" stroke="#5a7a3a" stroke-width="2"/>
+    <circle cx="2" cy="-32" r="5" fill="#ff9ebd"/>
+    <circle cx="-2" cy="-34" r="4" fill="#ffc8d6"/>
+    <circle cx="6" cy="-34" r="4" fill="#ffd8e4"/>
+    <circle cx="2" cy="-32" r="2" fill="#ffeb47"/>
+  </g>
+
+  <!-- 闪亮星星 -->
+  <text x="60" y="140" font-size="20" fill="#ffeb47" opacity="0.8">✦</text>
+  <text x="240" y="110" font-size="16" fill="#ff9ebd" opacity="0.9">✧</text>
+</svg>`,
+
+  // 男主：严肃/揭示真相
+  male_serious: `
+<svg viewBox="0 0 300 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="hairGrad3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a0a1a"/>
+      <stop offset="100%" stop-color="#000"/>
+    </linearGradient>
+    <linearGradient id="skinGrad3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f0d5b8"/>
+      <stop offset="100%" stop-color="#d4a878"/>
+    </linearGradient>
+    <linearGradient id="suitGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="100%" stop-color="#0a0515"/>
+    </linearGradient>
+    <linearGradient id="goldTrim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#e8c547"/>
+      <stop offset="50%" stop-color="#fff5b0"/>
+      <stop offset="100%" stop-color="#b89620"/>
+    </linearGradient>
+    <radialGradient id="darkAura" cx="0.5" cy="0.5">
+      <stop offset="0%" stop-color="#e8c547" stop-opacity="0.3"/>
+      <stop offset="70%" stop-color="#000" stop-opacity="0.6"/>
+    </radialGradient>
+  </defs>
+
+  <circle cx="150" cy="200" r="180" fill="url(#darkAura)"/>
+
+  <ellipse cx="150" cy="490" rx="90" ry="8" fill="rgba(0,0,0,0.5)"/>
+  <path d="M130 230 Q130 250 135 270 L165 270 Q170 250 170 230 Z" fill="url(#skinGrad3)"/>
+
+  <!-- 现在是笔挺西装（反转后） -->
+  <path d="M80 290 Q75 330 70 380 L70 500 L230 500 L230 380 Q225 330 220 290
+           Q210 260 180 255 L120 255 Q90 260 80 290 Z" fill="url(#suitGrad)"/>
+
+  <!-- 西装领 -->
+  <path d="M120 255 L130 290 L150 305 L170 290 L180 255 L165 270 L150 275 L135 270 Z" fill="#0a0515"/>
+  <!-- 领翻边 -->
+  <path d="M120 255 L130 290 L135 270 Z" fill="url(#goldTrim)" opacity="0.8"/>
+  <path d="M180 255 L170 290 L165 270 Z" fill="url(#goldTrim)" opacity="0.8"/>
+
+  <!-- 白衬衫 -->
+  <path d="M135 272 L150 305 L165 272 L150 275 Z" fill="#f5f5f5"/>
+  <!-- 金色领带 -->
+  <path d="M148 275 L144 295 L150 340 L156 295 L152 275 Z" fill="url(#goldTrim)"/>
+
+  <!-- 金色翻领装饰（丐帮徽章） -->
+  <circle cx="95" cy="310" r="8" fill="url(#goldTrim)" stroke="#000" stroke-width="1"/>
+  <text x="95" y="315" font-size="10" text-anchor="middle" fill="#000" font-weight="bold">丐</text>
+
+  <!-- 脸 -->
+  <path d="M105 165 Q100 215 130 238 Q150 250 170 238 Q200 215 195 165
+           Q195 120 175 105 Q150 95 125 105 Q105 120 105 165 Z" fill="url(#skinGrad3)"/>
+
+  <!-- 头发（更整齐，往后梳） -->
+  <path d="M95 165 Q85 100 115 75 Q140 60 160 65 Q200 70 210 110
+           Q215 145 208 175 L200 150 Q195 130 180 125 Q165 120 150 130
+           Q130 125 115 135 Q105 160 100 175 Z" fill="url(#hairGrad3)"/>
+
+  <!-- 头发被向后梳的纹理 -->
+  <path d="M115 100 Q130 85 150 80" stroke="#1a1a2e" stroke-width="2" fill="none" opacity="0.6"/>
+  <path d="M125 95 Q145 82 170 82" stroke="#1a1a2e" stroke-width="1.5" fill="none" opacity="0.5"/>
+
+  <!-- 碎发（稍微遮额头，不盖眼） -->
+  <path d="M125 105 Q135 125 130 140 L140 130 Q145 115 140 100 Z" fill="url(#hairGrad3)"/>
+  <path d="M160 100 Q170 120 175 135 L180 125 Q180 110 170 95 Z" fill="url(#hairGrad3)"/>
+
+  <!-- 耳朵耳环 -->
+  <path d="M97 180 Q92 195 100 205 L108 200 Z" fill="url(#skinGrad3)"/>
+  <circle cx="99" cy="203" r="3" fill="url(#goldTrim)"/>
+
+  <!-- 眼睛（双眼都露出，严肃锐利） -->
+  <!-- 左眼 -->
+  <ellipse cx="130" cy="180" rx="9" ry="5" fill="#fff"/>
+  <ellipse cx="130" cy="180" rx="5" ry="5" fill="#e8c547"/>
+  <ellipse cx="131" cy="179" rx="3" ry="4" fill="#b89620"/>
+  <circle cx="129" cy="178" r="1.2" fill="#fff"/>
+  <path d="M120 175 Q130 170 141 176" stroke="#0d0d1a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+  <!-- 右眼 -->
+  <ellipse cx="175" cy="180" rx="9" ry="5" fill="#fff"/>
+  <ellipse cx="175" cy="180" rx="5" ry="5" fill="#e8c547"/>
+  <ellipse cx="176" cy="179" rx="3" ry="4" fill="#b89620"/>
+  <circle cx="174" cy="178" r="1.2" fill="#fff"/>
+  <path d="M165 175 Q175 170 186 176" stroke="#0d0d1a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+  <!-- 眉（严厉地微皱） -->
+  <path d="M118 158 Q130 152 144 159" stroke="#0a0515" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M163 159 Q175 152 187 158" stroke="#0a0515" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+  <!-- 鼻 -->
+  <path d="M152 185 Q148 200 145 210 Q148 213 153 211" stroke="#a6795a" stroke-width="1.2" fill="none"/>
+
+  <!-- 嘴（抿紧，冷笑） -->
+  <path d="M135 222 Q150 225 165 221" stroke="#6b2e23" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M165 221 L170 218" stroke="#6b2e23" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- 手臂 -->
+  <path d="M75 330 Q60 360 65 420 Q68 450 80 460 L92 455 Q85 410 85 370 Z" fill="url(#suitGrad)"/>
+  <path d="M225 330 Q240 360 235 420 Q232 450 220 460 L208 455 Q215 410 215 370 Z" fill="url(#suitGrad)"/>
+  <!-- 袖口金边 -->
+  <path d="M72 445 L92 445 L92 455 L72 455 Z" fill="url(#goldTrim)" opacity="0.6"/>
+  <path d="M208 445 L228 445 L228 455 L208 455 Z" fill="url(#goldTrim)" opacity="0.6"/>
+
+  <!-- 手 -->
+  <ellipse cx="85" cy="460" rx="10" ry="12" fill="url(#skinGrad3)"/>
+  <ellipse cx="215" cy="460" rx="10" ry="12" fill="url(#skinGrad3)"/>
+
+  <!-- 戒指在右手 -->
+  <circle cx="220" cy="460" r="3" fill="url(#goldTrim)" stroke="#000" stroke-width="0.5"/>
+</svg>`
+};
+
+/* =========================================================================
+   场景背景 SVG
+   ========================================================================= */
+const BACKGROUNDS = {
+  rainy_street: `
+<svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="skyBg1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4a5a7a"/>
+      <stop offset="70%" stop-color="#7a8aa5"/>
+      <stop offset="100%" stop-color="#a5a090"/>
+    </linearGradient>
+    <linearGradient id="groundBg1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3d3d3d"/>
+      <stop offset="100%" stop-color="#1a1a1a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1000" height="400" fill="url(#skyBg1)"/>
+  <rect y="400" width="1000" height="200" fill="url(#groundBg1)"/>
+
+  <!-- 远处建筑剪影 -->
+  <rect x="50" y="200" width="120" height="200" fill="#2a2a3a" opacity="0.7"/>
+  <rect x="200" y="150" width="90" height="250" fill="#333348" opacity="0.7"/>
+  <rect x="310" y="180" width="150" height="220" fill="#2a2a3a" opacity="0.7"/>
+  <rect x="480" y="120" width="100" height="280" fill="#333348" opacity="0.7"/>
+  <rect x="620" y="170" width="130" height="230" fill="#2a2a3a" opacity="0.7"/>
+  <rect x="780" y="190" width="110" height="210" fill="#333348" opacity="0.7"/>
+  <rect x="910" y="160" width="90" height="240" fill="#2a2a3a" opacity="0.7"/>
+
+  <!-- 窗户亮光 -->
+  <g fill="#ffeb99" opacity="0.6">
+    <rect x="75" y="250" width="10" height="15"/>
+    <rect x="110" y="230" width="10" height="15"/>
+    <rect x="225" y="200" width="8" height="12"/>
+    <rect x="260" y="180" width="8" height="12"/>
+    <rect x="350" y="220" width="12" height="18"/>
+    <rect x="400" y="250" width="12" height="18"/>
+    <rect x="510" y="180" width="10" height="15"/>
+    <rect x="660" y="210" width="10" height="15"/>
+    <rect x="810" y="230" width="10" height="15"/>
+  </g>
+
+  <!-- 雨线 -->
+  <g stroke="#c0d0e0" stroke-width="1" opacity="0.5">
+    <line x1="50" y1="0" x2="20" y2="100"/>
+    <line x1="150" y1="0" x2="120" y2="120"/>
+    <line x1="280" y1="0" x2="250" y2="80"/>
+    <line x1="420" y1="0" x2="390" y2="110"/>
+    <line x1="580" y1="0" x2="550" y2="90"/>
+    <line x1="720" y1="0" x2="690" y2="130"/>
+    <line x1="880" y1="0" x2="850" y2="100"/>
+    <line x1="100" y1="150" x2="70" y2="260"/>
+    <line x1="230" y1="200" x2="200" y2="310"/>
+    <line x1="380" y1="180" x2="350" y2="290"/>
+    <line x1="520" y1="220" x2="490" y2="330"/>
+    <line x1="680" y1="160" x2="650" y2="270"/>
+    <line x1="830" y1="190" x2="800" y2="300"/>
+  </g>
+
+  <!-- 路灯 -->
+  <g>
+    <rect x="150" y="300" width="3" height="100" fill="#2a2a2a"/>
+    <circle cx="151" cy="295" r="12" fill="#ffeb99" opacity="0.8"/>
+    <circle cx="151" cy="295" r="25" fill="#ffeb99" opacity="0.2"/>
+    <rect x="800" y="280" width="3" height="120" fill="#2a2a2a"/>
+    <circle cx="801" cy="275" r="12" fill="#ffeb99" opacity="0.8"/>
+    <circle cx="801" cy="275" r="25" fill="#ffeb99" opacity="0.2"/>
+  </g>
+
+  <!-- 地面反光 -->
+  <ellipse cx="151" cy="450" rx="80" ry="8" fill="#ffeb99" opacity="0.15"/>
+  <ellipse cx="801" cy="470" rx="80" ry="8" fill="#ffeb99" opacity="0.15"/>
+
+  <!-- 地面积水倒影 -->
+  <ellipse cx="400" cy="520" rx="180" ry="10" fill="#6a7a8a" opacity="0.3"/>
+  <ellipse cx="700" cy="540" rx="200" ry="12" fill="#6a7a8a" opacity="0.3"/>
+
+  <!-- 桥洞剪影（右侧） -->
+  <path d="M700 600 L700 420 Q800 380 900 420 L900 600 Z" fill="#0a0a0a" opacity="0.6"/>
+</svg>`,
+
+  underpass: `
+<svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="lightHalo1" cx="0.5" cy="0.3">
+      <stop offset="0%" stop-color="#ffeb99" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#ffeb99" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="wallGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4a4030"/>
+      <stop offset="100%" stop-color="#2a2418"/>
+    </linearGradient>
+  </defs>
+  <rect width="1000" height="600" fill="#1a1610"/>
+  <!-- 桥洞拱形 -->
+  <path d="M0 0 L0 600 L1000 600 L1000 0 L1000 0 Q500 200 0 0 Z" fill="url(#wallGrad)"/>
+  <path d="M50 100 Q500 280 950 100 L950 0 L50 0 Z" fill="#0a0605"/>
+
+  <!-- 光晕 -->
+  <rect width="1000" height="600" fill="url(#lightHalo1)" opacity="0.8"/>
+
+  <!-- 墙上涂鸦 -->
+  <text x="100" y="300" font-family="cursive" font-size="30" fill="#ff4d87" opacity="0.7" transform="rotate(-5 100 300)">丐</text>
+  <text x="850" y="320" font-family="cursive" font-size="24" fill="#e8c547" opacity="0.5">王</text>
+
+  <!-- 纸板箱 -->
+  <g transform="translate(100,450)">
+    <path d="M0 0 L120 -10 L130 80 L5 90 Z" fill="#c9a373" stroke="#6b4423" stroke-width="2"/>
+    <path d="M0 0 L-10 5 L-5 85 L5 90 Z" fill="#8b6b3d"/>
+    <text x="60" y="50" font-size="14" fill="#6b4423" text-anchor="middle">易碎物品</text>
+  </g>
+
+  <!-- 报纸 -->
+  <g transform="translate(250,500) rotate(-10)">
+    <rect width="80" height="50" fill="#f5f5dc" opacity="0.8"/>
+    <line x1="10" y1="10" x2="70" y2="10" stroke="#333" stroke-width="1"/>
+    <line x1="10" y1="20" x2="60" y2="20" stroke="#333" stroke-width="1"/>
+    <line x1="10" y1="30" x2="70" y2="30" stroke="#333" stroke-width="1"/>
+  </g>
+
+  <!-- 破碗几个 -->
+  <ellipse cx="850" cy="550" rx="30" ry="8" fill="#4a2f18"/>
+  <path d="M820 550 Q820 570 850 572 Q880 570 880 550 Z" fill="#5a3a20"/>
+
+  <!-- 飘落的报纸碎片 -->
+  <g opacity="0.6">
+    <rect x="300" y="200" width="15" height="10" fill="#f5f5dc" transform="rotate(30 307 205)"/>
+    <rect x="500" y="350" width="12" height="8" fill="#f5f5dc" transform="rotate(-20 506 354)"/>
+    <rect x="700" y="250" width="14" height="9" fill="#f5f5dc" transform="rotate(45 707 254)"/>
+  </g>
+
+  <!-- 灯泡 -->
+  <circle cx="500" cy="80" r="15" fill="#ffeb99"/>
+  <line x1="500" y1="0" x2="500" y2="65" stroke="#333" stroke-width="2"/>
+  <ellipse cx="500" cy="85" rx="100" ry="40" fill="#ffeb99" opacity="0.2"/>
+
+  <!-- 地面阴影 -->
+  <rect y="500" width="1000" height="100" fill="#000" opacity="0.5"/>
+</svg>`,
+
+  dumpster: `
+<svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="alleySky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3d2a4a"/>
+      <stop offset="50%" stop-color="#6b4a6b"/>
+      <stop offset="100%" stop-color="#8b6b7a"/>
+    </linearGradient>
+    <linearGradient id="wallBrick" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5a3a2a"/>
+      <stop offset="100%" stop-color="#3a2418"/>
+    </linearGradient>
+  </defs>
+  <!-- 黄昏天 -->
+  <rect width="1000" height="300" fill="url(#alleySky)"/>
+  <!-- 后巷墙 -->
+  <rect x="0" y="0" width="250" height="600" fill="url(#wallBrick)"/>
+  <rect x="750" y="0" width="250" height="600" fill="url(#wallBrick)"/>
+
+  <!-- 砖块纹理 -->
+  <g stroke="#2a1810" stroke-width="1" opacity="0.5">
+    <line x1="0" y1="100" x2="250" y2="100"/>
+    <line x1="0" y1="200" x2="250" y2="200"/>
+    <line x1="0" y1="300" x2="250" y2="300"/>
+    <line x1="0" y1="400" x2="250" y2="400"/>
+    <line x1="0" y1="500" x2="250" y2="500"/>
+    <line x1="750" y1="100" x2="1000" y2="100"/>
+    <line x1="750" y1="200" x2="1000" y2="200"/>
+    <line x1="750" y1="300" x2="1000" y2="300"/>
+    <line x1="750" y1="400" x2="1000" y2="400"/>
+    <line x1="750" y1="500" x2="1000" y2="500"/>
+  </g>
+
+  <!-- 地面 -->
+  <rect y="450" width="1000" height="150" fill="#2a1a18"/>
+
+  <!-- 大垃圾桶（绿色金属） -->
+  <g transform="translate(650, 380)">
+    <rect x="0" y="0" width="180" height="100" fill="#3a5a3a" stroke="#1a2a1a" stroke-width="3"/>
+    <rect x="0" y="0" width="180" height="15" fill="#2a4a2a"/>
+    <!-- 桶盖开着 -->
+    <path d="M0 0 L-20 -30 L160 -35 L180 0 Z" fill="#2a4a2a" stroke="#1a2a1a" stroke-width="2"/>
+    <!-- 废料 -->
+    <path d="M10 -25 Q40 -40 70 -20 Q100 -45 140 -25 Q170 -35 165 -5" fill="#6b5a3a"/>
+    <circle cx="50" cy="-15" r="8" fill="#b8863a"/>
+    <circle cx="100" cy="-18" r="6" fill="#4a2a1a"/>
+    <!-- 条纹 -->
+    <rect x="10" y="50" width="160" height="8" fill="#1a2a1a" opacity="0.5"/>
+    <!-- "GARBAGE" 但涂掉了 -->
+    <text x="90" y="80" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#e8c547" font-weight="bold" opacity="0.7">米 其 林 ★</text>
+  </g>
+
+  <!-- 散落的垃圾 -->
+  <g transform="translate(400, 520)">
+    <ellipse cx="0" cy="0" rx="25" ry="8" fill="#c92121" opacity="0.7"/>
+    <text x="0" y="3" text-anchor="middle" font-size="10" fill="#fff">可乐</text>
+  </g>
+  <g transform="translate(300, 540) rotate(20)">
+    <rect width="40" height="25" fill="#ffc947" stroke="#8b6b1a"/>
+    <text x="20" y="15" text-anchor="middle" font-size="9" fill="#3a2818">薯条</text>
+  </g>
+  <g transform="translate(500, 510) rotate(-15)">
+    <circle r="15" fill="#c9a373" stroke="#6b4423" stroke-width="1"/>
+    <circle r="8" fill="#8b5a2a"/>
+  </g>
+
+  <!-- 飘动苍蝇 -->
+  <text x="700" y="330" font-size="16" opacity="0.6">🦟</text>
+  <text x="730" y="360" font-size="14" opacity="0.5">🦟</text>
+
+  <!-- 粉色爱心（讽刺） -->
+  <text x="600" y="280" font-size="24" fill="#ff9ebd" opacity="0.7">♥</text>
+  <text x="450" y="250" font-size="18" fill="#ff9ebd" opacity="0.6">♡</text>
+  <text x="820" y="200" font-size="20" fill="#ff9ebd" opacity="0.7">♥</text>
+</svg>`,
+
+  dark_alley: `
+<svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="streetLamp" cx="0.5" cy="0.3">
+      <stop offset="0%" stop-color="#ffeb99" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#ffeb99" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1000" height="600" fill="#0a0a1a"/>
+
+  <!-- 路灯光晕 -->
+  <rect width="1000" height="600" fill="url(#streetLamp)" opacity="0.8"/>
+
+  <!-- 远景建筑 -->
+  <rect x="0" y="200" width="300" height="400" fill="#1a1a2e"/>
+  <rect x="700" y="180" width="300" height="420" fill="#1a1a2e"/>
+
+  <!-- 中景小路 -->
+  <path d="M350 600 L450 300 L550 300 L650 600 Z" fill="#0d0d1a"/>
+
+  <!-- 其他乞丐剪影（远处） -->
+  <g transform="translate(200, 450)" opacity="0.7">
+    <ellipse cx="0" cy="50" rx="25" ry="5" fill="#000"/>
+    <path d="M-20 50 L-15 10 L-5 -10 L5 -10 L15 10 L20 50 Z" fill="#2a2418"/>
+    <circle cx="0" cy="-15" r="10" fill="#2a2418"/>
+    <!-- 一只手伸出来 -->
+    <path d="M-15 10 L-25 25 L-22 30 L-15 20 Z" fill="#2a2418"/>
+  </g>
+
+  <g transform="translate(780, 440)" opacity="0.7">
+    <ellipse cx="0" cy="50" rx="25" ry="5" fill="#000"/>
+    <path d="M-20 50 L-15 10 L-5 -10 L5 -10 L15 10 L20 50 Z" fill="#2a2418"/>
+    <circle cx="0" cy="-15" r="10" fill="#2a2418"/>
+  </g>
+
+  <!-- 路灯杆 -->
+  <rect x="498" y="200" width="4" height="250" fill="#1a1a1a"/>
+  <circle cx="500" cy="195" r="15" fill="#ffeb99"/>
+
+  <!-- 地面反光 -->
+  <ellipse cx="500" cy="500" rx="200" ry="15" fill="#ffeb99" opacity="0.1"/>
+
+  <!-- 飘动树叶 -->
+  <g fill="#3a5a3a" opacity="0.7">
+    <path d="M100 200 Q110 195 120 200 Q115 210 105 210 Z"/>
+    <path d="M600 150 Q610 145 620 150 Q615 160 605 160 Z"/>
+  </g>
+
+  <!-- 紧张氛围 -->
+  <g fill="#c92121" opacity="0.3">
+    <circle cx="150" cy="100" r="2"/>
+    <circle cx="850" cy="80" r="2"/>
+  </g>
+</svg>`,
+
+  sunset_park: `
+<svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sunsetSky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ff6b8a"/>
+      <stop offset="30%" stop-color="#ffb37a"/>
+      <stop offset="60%" stop-color="#ffd4a3"/>
+      <stop offset="100%" stop-color="#ffeccc"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0.5" cy="0.5">
+      <stop offset="0%" stop-color="#fff5b0"/>
+      <stop offset="60%" stop-color="#ffb347"/>
+      <stop offset="100%" stop-color="#ff7a3a"/>
+    </radialGradient>
+  </defs>
+  <!-- 夕阳天空 -->
+  <rect width="1000" height="420" fill="url(#sunsetSky)"/>
+
+  <!-- 太阳 -->
+  <circle cx="500" cy="320" r="80" fill="url(#sun)"/>
+  <circle cx="500" cy="320" r="110" fill="#ffd4a3" opacity="0.4"/>
+  <circle cx="500" cy="320" r="150" fill="#ffb37a" opacity="0.2"/>
+
+  <!-- 云 -->
+  <g fill="#ffc8d6" opacity="0.8">
+    <ellipse cx="200" cy="120" rx="80" ry="15"/>
+    <ellipse cx="780" cy="150" rx="100" ry="18"/>
+    <ellipse cx="150" cy="200" rx="60" ry="12"/>
+  </g>
+
+  <!-- 远山 -->
+  <path d="M0 380 L200 300 L400 350 L600 280 L800 340 L1000 310 L1000 420 L0 420 Z" fill="#6b4a5a" opacity="0.7"/>
+
+  <!-- 草地 -->
+  <rect y="420" width="1000" height="180" fill="#6b8a3a"/>
+  <path d="M0 420 L1000 420 L1000 450 Q500 470 0 450 Z" fill="#7aa344"/>
+
+  <!-- 草叶 -->
+  <g stroke="#4a6a2a" stroke-width="2" fill="none">
+    <path d="M50 480 Q52 470 55 480"/>
+    <path d="M120 500 Q122 490 125 500"/>
+    <path d="M250 470 Q252 460 255 470"/>
+    <path d="M400 490 Q402 480 405 490"/>
+    <path d="M550 480 Q552 470 555 480"/>
+    <path d="M700 495 Q702 485 705 495"/>
+    <path d="M850 475 Q852 465 855 475"/>
+    <path d="M950 485 Q952 475 955 485"/>
+  </g>
+
+  <!-- 小花 -->
+  <g>
+    <circle cx="100" cy="520" r="4" fill="#ff9ebd"/>
+    <circle cx="300" cy="540" r="4" fill="#fff"/>
+    <circle cx="500" cy="535" r="4" fill="#ffeb99"/>
+    <circle cx="700" cy="525" r="4" fill="#ff9ebd"/>
+    <circle cx="880" cy="545" r="4" fill="#fff"/>
+  </g>
+
+  <!-- 长椅（左侧） -->
+  <g transform="translate(80, 460)">
+    <rect x="0" y="0" width="140" height="12" fill="#6b4423"/>
+    <rect x="0" y="-20" width="140" height="12" fill="#6b4423"/>
+    <rect x="5" y="12" width="10" height="30" fill="#4a2f18"/>
+    <rect x="125" y="12" width="10" height="30" fill="#4a2f18"/>
+    <rect x="0" y="-32" width="140" height="12" fill="#6b4423"/>
+  </g>
+
+  <!-- 树（远景） -->
+  <g transform="translate(870, 380)">
+    <rect x="-4" y="0" width="8" height="40" fill="#4a2f18"/>
+    <circle cx="0" cy="-10" r="25" fill="#3a5a3a"/>
+    <circle cx="-15" cy="-5" r="20" fill="#4a6a3a"/>
+    <circle cx="15" cy="-5" r="20" fill="#4a6a3a"/>
+  </g>
+
+  <!-- 闪光（浪漫感） -->
+  <g fill="#fff">
+    <circle cx="150" cy="220" r="2" opacity="0.9"/>
+    <circle cx="350" cy="180" r="1.5" opacity="0.7"/>
+    <circle cx="650" cy="210" r="2" opacity="0.8"/>
+    <circle cx="820" cy="250" r="1.5" opacity="0.7"/>
+  </g>
+
+  <!-- 花瓣飘落 -->
+  <g fill="#ffc8d6">
+    <path d="M200 100 Q205 105 210 100 Q205 110 200 100"/>
+    <path d="M600 130 Q605 135 610 130 Q605 140 600 130"/>
+    <path d="M400 200 Q405 205 410 200 Q405 210 400 200"/>
+    <path d="M750 180 Q755 185 760 180 Q755 190 750 180"/>
+  </g>
+</svg>`,
+
+  underground_lair: `
+<svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="darkFloor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a0a1a"/>
+      <stop offset="100%" stop-color="#000"/>
+    </linearGradient>
+    <radialGradient id="spotlight" cx="0.5" cy="0.3">
+      <stop offset="0%" stop-color="#e8c547" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#e8c547" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- 黑色大厅 -->
+  <rect width="1000" height="600" fill="#0a0515"/>
+
+  <!-- 地面 -->
+  <rect y="400" width="1000" height="200" fill="url(#darkFloor)"/>
+
+  <!-- 地面金线 -->
+  <path d="M0 450 L1000 450" stroke="#e8c547" stroke-width="1" opacity="0.3"/>
+
+  <!-- 聚光灯 -->
+  <rect width="1000" height="600" fill="url(#spotlight)"/>
+
+  <!-- 远方的王座 -->
+  <g transform="translate(500, 350)">
+    <path d="M-80 0 L-80 50 L80 50 L80 0 Z" fill="#1a0515"/>
+    <path d="M-80 0 L-80 -80 L80 -80 L80 0 Z" fill="#2a0a25" stroke="#e8c547" stroke-width="2"/>
+    <!-- 王座顶部装饰 -->
+    <path d="M-80 -80 L-60 -95 L-40 -80 L-20 -100 L0 -80 L20 -100 L40 -80 L60 -95 L80 -80 Z" fill="#e8c547"/>
+    <!-- 中央"丐"字 -->
+    <circle cx="0" cy="-40" r="20" fill="#e8c547"/>
+    <text x="0" y="-33" text-anchor="middle" font-size="24" fill="#000" font-weight="bold">丐</text>
+  </g>
+
+  <!-- 两侧的柱子 -->
+  <g>
+    <rect x="100" y="100" width="30" height="400" fill="#1a0a1a" stroke="#e8c547" stroke-width="1"/>
+    <rect x="870" y="100" width="30" height="400" fill="#1a0a1a" stroke="#e8c547" stroke-width="1"/>
+    <!-- 柱顶 -->
+    <rect x="90" y="100" width="50" height="15" fill="#e8c547" opacity="0.8"/>
+    <rect x="860" y="100" width="50" height="15" fill="#e8c547" opacity="0.8"/>
+  </g>
+
+  <!-- 下方成排的乞丐剪影（跪拜状） -->
+  <g fill="#1a0a1a" stroke="#3a2418" stroke-width="1">
+    <!-- 第一排 -->
+    <path d="M200 500 Q210 480 220 490 Q230 480 240 500 L235 520 L205 520 Z"/>
+    <path d="M280 500 Q290 480 300 490 Q310 480 320 500 L315 520 L285 520 Z"/>
+    <path d="M360 500 Q370 480 380 490 Q390 480 400 500 L395 520 L365 520 Z"/>
+    <path d="M600 500 Q610 480 620 490 Q630 480 640 500 L635 520 L605 520 Z"/>
+    <path d="M680 500 Q690 480 700 490 Q710 480 720 500 L715 520 L685 520 Z"/>
+    <path d="M760 500 Q770 480 780 490 Q790 480 800 500 L795 520 L765 520 Z"/>
+  </g>
+
+  <!-- 红毯 -->
+  <path d="M400 600 L500 350 L600 600 Z" fill="#8b0000" opacity="0.8"/>
+  <path d="M410 600 L500 370 L590 600" stroke="#e8c547" stroke-width="2" fill="none" opacity="0.7"/>
+
+  <!-- 蜡烛/火炬 -->
+  <g>
+    <rect x="115" y="150" width="3" height="15" fill="#e8c547"/>
+    <ellipse cx="116" cy="145" rx="5" ry="10" fill="#ff6b3a" opacity="0.8"/>
+    <ellipse cx="116" cy="140" rx="3" ry="6" fill="#ffeb99"/>
+  </g>
+  <g>
+    <rect x="883" y="150" width="3" height="15" fill="#e8c547"/>
+    <ellipse cx="884" cy="145" rx="5" ry="10" fill="#ff6b3a" opacity="0.8"/>
+    <ellipse cx="884" cy="140" rx="3" ry="6" fill="#ffeb99"/>
+  </g>
+
+  <!-- 烟雾 -->
+  <g fill="#3a2a3a" opacity="0.3">
+    <ellipse cx="300" cy="200" rx="80" ry="20"/>
+    <ellipse cx="700" cy="220" rx="100" ry="25"/>
+  </g>
+
+  <!-- 浮动金色粒子 -->
+  <g fill="#e8c547">
+    <circle cx="200" cy="300" r="2" opacity="0.7"/>
+    <circle cx="400" cy="250" r="1.5" opacity="0.6"/>
+    <circle cx="600" cy="280" r="2" opacity="0.8"/>
+    <circle cx="800" cy="260" r="1.5" opacity="0.7"/>
+    <circle cx="150" cy="350" r="1" opacity="0.5"/>
+    <circle cx="850" cy="340" r="1" opacity="0.5"/>
+  </g>
+</svg>`
+};
+
+/* =========================================================================
+   剧情数据
+   ========================================================================= */
+const SCENES = [
+  // ========== 场景 1: 雨夜初遇 ==========
+  {
+    tag: "第一幕・雨夜初遇",
+    bg: "rainy_street",
+    char: "male_normal",
+    dialogs: [
+      { speaker: "旁白", text: "那是一个雨夜。你的钱包刚刚被偷，手机也没电了。冷风钻进衣领，你蹲在街角瑟瑟发抖。" },
+      { speaker: "???", text: "（一道身影在你面前停下，是个披着破布的男人。）" },
+      { speaker: "神秘男", text: "女人。你一个人在这里，太危险了。" },
+      { speaker: "神秘男", text: "跟我一起——去乞讨。" }
+    ],
+    choices: [
+      { text: "滚开！我不认识你。", delta: -1, next: "s1_rude" },
+      { text: "...乞讨？你是不是哪里搞错了？", delta: 0, next: "s1_confused" },
+      { text: "（鬼使神差地点了点头）", delta: 2, next: "s1_agree" }
+    ]
+  },
+  // s1 分支收束
+  {
+    id: "s1_rude",
+    tag: "第一幕・雨夜初遇",
+    bg: "rainy_street",
+    char: "male_smirk",
+    dialogs: [
+      { speaker: "神秘男", text: "（挑眉）有骨气。我喜欢。" },
+      { speaker: "神秘男", text: "你骂我的样子——像极了我上个月讨到的那个二手爱马仕包上的划痕。" },
+      { speaker: "神秘男", text: "（他伸手拉起你）走吧。我请你吃今晚的头等料理。" }
+    ],
+    autoNext: 4
+  },
+  {
+    id: "s1_confused",
+    tag: "第一幕・雨夜初遇",
+    bg: "rainy_street",
+    char: "male_normal",
+    dialogs: [
+      { speaker: "神秘男", text: "（他的嘴角扬起一抹深不可测的笑）" },
+      { speaker: "神秘男", text: "没搞错。这条街上所有的纸板箱、所有的角落——" },
+      { speaker: "神秘男", text: "都会在今晚，属于你。只要你愿意跟我走。" }
+    ],
+    autoNext: 4
+  },
+  {
+    id: "s1_agree",
+    tag: "第一幕・雨夜初遇",
+    bg: "rainy_street",
+    char: "male_smirk",
+    dialogs: [
+      { speaker: "神秘男", text: "（愣了一下，随后笑了）乖。" },
+      { speaker: "神秘男", text: "女人，跟对人了。" },
+      { speaker: "神秘男", text: "（他脱下身上唯一一件破斗篷，披在你身上——斗篷比你外套还脏。）" }
+    ],
+    autoNext: 4
+  },
+
+  // ========== 场景 2: 我的地盘 ==========
+  {
+    tag: "第二幕・我的地盘",
+    bg: "underpass",
+    char: "male_normal",
+    dialogs: [
+      { speaker: "旁白", text: "他带你来到了一个巨大的桥洞下。昏黄的灯光下，散落着纸板、报纸、和几只豁口的陶碗。" },
+      { speaker: "神秘男", text: "看见了吗？" },
+      { speaker: "神秘男", text: "从这根柱子，到对面那个便利店——整整八百米。" },
+      { speaker: "神秘男", text: "都是我的地盘。" },
+      { speaker: "神秘男", text: "（他指着角落里一个印着「易碎物品」的纸箱）那是我的总统套房。" }
+    ],
+    choices: [
+      { text: "哇...好厉害！（真心）", delta: 2, next: "s2_impressed" },
+      { text: "……这有什么好炫耀的。", delta: -1, next: "s2_dismissive" }
+    ]
+  },
+  {
+    id: "s2_impressed",
+    tag: "第二幕・我的地盘",
+    bg: "underpass",
+    char: "male_smirk",
+    dialogs: [
+      { speaker: "神秘男", text: "（低头笑了笑，声音放软）" },
+      { speaker: "神秘男", text: "以后——也是你的。" },
+      { speaker: "神秘男", text: "我讨到的第一个硬币，是你的。最好的那块纸板，也是你的。" }
+    ],
+    autoNext: 7
+  },
+  {
+    id: "s2_dismissive",
+    tag: "第二幕・我的地盘",
+    bg: "underpass",
+    char: "male_serious",
+    dialogs: [
+      { speaker: "神秘男", text: "（眼神暗了暗）" },
+      { speaker: "神秘男", text: "你不懂。这条街——比你想象中，深得多。" },
+      { speaker: "神秘男", text: "（他没再多说，从怀里掏出一个皱巴巴的塑料袋。）" }
+    ],
+    autoNext: 7
+  },
+
+  // ========== 场景 3: 米其林三星 ==========
+  {
+    tag: "第三幕・米其林三星",
+    bg: "dumpster",
+    char: "male_smirk",
+    dialogs: [
+      { speaker: "旁白", text: "他带你绕到一家餐厅的后巷。一股……特别「层次丰富」的气味扑面而来。" },
+      { speaker: "神秘男", text: "（从那家餐厅的绿色垃圾桶里，捞出一个咬了两口的汉堡）" },
+      { speaker: "神秘男", text: "女人，跟我在一起，你绝对不会吃到原价的食物。" },
+      { speaker: "神秘男", text: "（他用破布擦了擦汉堡，郑重地递到你面前）" },
+      { speaker: "神秘男", text: "今天的米其林三星主厨特餐——牛肉汉堡，前任客人只咬了两口。" },
+      { speaker: "神秘男", text: "刚咬下去那两口，几乎等于免费帮你试毒了。" }
+    ],
+    choices: [
+      { text: "（闭着眼睛咬了一口）好……好吃。", delta: 3, next: "s3_eat" },
+      { text: "我真的吃不下去……", delta: 0, next: "s3_refuse" },
+      { text: "你这算是在毒杀我吗？！", delta: -2, next: "s3_angry" }
+    ]
+  },
+  {
+    id: "s3_eat",
+    tag: "第三幕・米其林三星",
+    bg: "dumpster",
+    char: "male_smirk",
+    dialogs: [
+      { speaker: "神秘男", text: "（他看着你吃，眼神温柔得不像话）" },
+      { speaker: "神秘男", text: "……笨蛋。" },
+      { speaker: "神秘男", text: "下次，我让人给你留一整个。" },
+      { speaker: "旁白", text: "（…让人？）" }
+    ],
+    autoNext: 11
+  },
+  {
+    id: "s3_refuse",
+    tag: "第三幕・米其林三星",
+    bg: "dumpster",
+    char: "male_normal",
+    dialogs: [
+      { speaker: "神秘男", text: "（他把汉堡收回，随手丢给了旁边的流浪猫）" },
+      { speaker: "神秘男", text: "知道了。我的女人，怎么能吃别人剩下的。" },
+      { speaker: "神秘男", text: "明天，我给你讨一整桌。" }
+    ],
+    autoNext: 11
+  },
+  {
+    id: "s3_angry",
+    tag: "第三幕・米其林三星",
+    bg: "dumpster",
+    char: "male_smirk",
+    dialogs: [
+      { speaker: "神秘男", text: "（他笑出声）好烈的性子。" },
+      { speaker: "神秘男", text: "放心。我讨来的东西——" },
+      { speaker: "神秘男", text: "比这条街所有餐厅都干净。" },
+      { speaker: "旁白", text: "（这句话听起来……莫名很有底气。）" }
+    ],
+    autoNext: 11
+  },
+
+  // ========== 场景 4: 情敌出现 ==========
+  {
+    tag: "第四幕・情敌来袭",
+    bg: "dark_alley",
+    char: "male_serious",
+    dialogs: [
+      { speaker: "旁白", text: "夜更深了。一个佝偻的身影从阴影里走出，目光黏在你身上。" },
+      { speaker: "陌生乞丐", text: "（嘿嘿一笑）新来的妹妹啊？要不要跟哥哥到那边——" },
+      { speaker: "神秘男", text: "（一把将你拉到身后，声音冷得像刀）" },
+      { speaker: "神秘男", text: "她是我的女人。" },
+      { speaker: "神秘男", text: "连她坐的纸板——都比你的新。" },
+      { speaker: "神秘男", text: "（他稍稍侧身，露出胸口一枚小小的金色徽章）" },
+      { speaker: "神秘男", text: "识相的。滚去桥的另一边。" },
+      { speaker: "旁白", text: "（那个乞丐看到徽章，脸色骤变，连滚带爬地跑了。）" }
+    ],
+    choices: [
+      { text: "（脸颊发烫）……你、你刚才好帅。", delta: 3, next: "s4_blush" },
+      { text: "那个徽章是什么？", delta: 1, next: "s4_curious" },
+      { text: "你们乞丐界……都这样的吗？", delta: 0, next: "s4_question" }
+    ]
+  },
+  {
+    id: "s4_blush",
+    tag: "第四幕・情敌来袭",
+    bg: "dark_alley",
+    char: "male_smirk",
+    dialogs: [
+      { speaker: "神秘男", text: "（他低头凑近你的耳边，声音低哑）" },
+      { speaker: "神秘男", text: "……我还会更帅。" },
+      { speaker: "神秘男", text: "等你知道我是谁的时候。" }
+    ],
+    autoNext: 15
+  },
+  {
+    id: "s4_curious",
+    tag: "第四幕・情敌来袭",
+    bg: "dark_alley",
+    char: "male_serious",
+    dialogs: [
+      { speaker: "神秘男", text: "（他把徽章塞回衣内，避开你的目光）" },
+      { speaker: "神秘男", text: "……一个老物件。" },
+      { speaker: "神秘男", text: "到时候——你会知道的。" }
+    ],
+    autoNext: 15
+  },
+  {
+    id: "s4_question",
+    tag: "第四幕・情敌来袭",
+    bg: "dark_alley",
+    char: "male_smirk",
+    dialogs: [
+      { speaker: "神秘男", text: "（扯了扯嘴角）" },
+      { speaker: "神秘男", text: "我们——不太一样。" },
+      { speaker: "神秘男", text: "但从今晚起，你是我们的人了。" }
+    ],
+    autoNext: 15
+  },
+
+  // ========== 场景 5: 瓶盖求婚 ==========
+  {
+    tag: "第五幕・瓶盖婚约",
+    bg: "sunset_park",
+    char: "male_smirk",
+    dialogs: [
+      { speaker: "旁白", text: "第二天傍晚。他带你来到一个破旧的街心公园。夕阳把一切染成粉橘色。" },
+      { speaker: "神秘男", text: "（他突然单膝跪地。你惊得后退一步。）" },
+      { speaker: "神秘男", text: "女人。" },
+      { speaker: "神秘男", text: "（他从怀里掏出一个……金色的瓶盖，是可乐瓶盖，边缘还亮闪闪的。）" },
+      { speaker: "神秘男", text: "戴上它。" },
+      { speaker: "神秘男", text: "从今天起——这条街最好的三个垃圾桶，是你的嫁妆。" },
+      { speaker: "神秘男", text: "最干的那块桥洞，是你的嫁妆。" },
+      { speaker: "神秘男", text: "我这辈子只讨过两样东西。" },
+      { speaker: "神秘男", text: "一是钱。二——是你。" }
+    ],
+    choices: [
+      { text: "（眼眶一热）我、我愿意。", delta: 3, next: "s5_yes", flag: "accepted" },
+      { text: "（犹豫）这也太草率了吧……", delta: 0, next: "s5_hesitate" },
+      { text: "（后退一步）你是不是疯了？", delta: -2, next: "s5_reject" }
+    ]
+  },
+  {
+    id: "s5_yes",
+    tag: "第五幕・瓶盖婚约",
+    bg: "sunset_park",
+    char: "male_smirk",
+    dialogs: [
+      { speaker: "神秘男", text: "（他郑重地将瓶盖戴在你的无名指上。）" },
+      { speaker: "神秘男", text: "记住——这不是普通的瓶盖。" },
+      { speaker: "神秘男", text: "戴上它的那一刻……你就回不了头了。" },
+      { speaker: "旁白", text: "（瓶盖在夕阳下闪着奇异的金光。你隐约看到背面刻着一个你看不清的符号……）" }
+    ],
+    autoNext: 19
+  },
+  {
+    id: "s5_hesitate",
+    tag: "第五幕・瓶盖婚约",
+    bg: "sunset_park",
+    char: "male_serious",
+    dialogs: [
+      { speaker: "神秘男", text: "（他的笑容淡了下去，拉起你的手）" },
+      { speaker: "神秘男", text: "由不得你犹豫了。" },
+      { speaker: "神秘男", text: "（他直接把瓶盖套在你的手指上，动作不容拒绝。）" }
+    ],
+    autoNext: 19
+  },
+  {
+    id: "s5_reject",
+    tag: "第五幕・瓶盖婚约",
+    bg: "sunset_park",
+    char: "male_serious",
+    dialogs: [
+      { speaker: "神秘男", text: "（他慢慢站起来，眼神变得陌生）" },
+      { speaker: "神秘男", text: "……来不及了。" },
+      { speaker: "神秘男", text: "你接过我递的汉堡那一刻——" },
+      { speaker: "神秘男", text: "就已经是我的人了。" },
+      { speaker: "神秘男", text: "（他的手紧紧握住你的，瓶盖套上了指。）" }
+    ],
+    autoNext: 19
+  },
+
+  // ========== 场景 6: 身份揭示（反转） ==========
+  {
+    tag: "第六幕・真相",
+    bg: "underground_lair",
+    char: "male_serious",
+    preEffect: "flash",
+    onEnter: "darkMode",
+    dialogs: [
+      { speaker: "旁白", text: "突然，他拉着你走向街角一扇锈迹斑斑的铁门。门后是一条向下延伸的楼梯。" },
+      { speaker: "旁白", text: "楼梯尽头——是一个巨大的地下大厅。" },
+      { speaker: "旁白", text: "数百个衣衫褴褛的人齐刷刷跪在两侧。金色的火炬点亮了红毯尽头的王座。" },
+      { speaker: "众人（齐声）", text: "——恭迎帮主！恭迎少夫人！" },
+      { speaker: "???", text: "（他站在你身旁，缓缓脱下那件破布披风。）" },
+      { speaker: "???", text: "（露出里面笔挺的金纹黑色西装。）" },
+      { speaker: "???", text: "（他整了整领带，终于开口——）" },
+      { speaker: "霸道乞丐", text: "其实……" },
+      { speaker: "霸道乞丐", text: "我不是乞丐。" },
+      { speaker: "霸道乞丐", text: "我是全国丐帮联盟第七十二代帮主。" },
+      { speaker: "霸道乞丐", text: "全市三千零七十二名「从业人员」——都是我的员工。" },
+      { speaker: "霸道乞丐", text: "去年，我们的地下流水——二十三亿。" },
+      { speaker: "霸道乞丐", text: "（他低头看向你手上的瓶盖，眼底闪过一丝危险的光。）" },
+      { speaker: "霸道乞丐", text: "你戴上这枚信物的那一刻——" },
+      { speaker: "霸道乞丐", text: "已经是我丐帮的少夫人了。" }
+    ],
+    choices: [
+      { text: "（深吸一口气）那……帮规是什么？", delta: 2, next: "final_queen" },
+      { text: "（转身就跑）不行！我不是这块料！", delta: -2, next: "final_escape" },
+      { text: "（冷静地看着他）证据呢？", delta: 0, next: "final_smart" }
+    ]
+  }
+];
+
+/* =========================================================================
+   结局定义
+   ========================================================================= */
+const ENDINGS = {
+  final_queen: {
+    title: "丐帮少夫人",
+    subtitle: "三年后，地下王国，灯火辉煌。",
+    body: `你坐在他身旁的副座上。<br>
+        面前是一整桌真正的米其林三星，每一道菜都是新鲜出锅，无人"试毒"。<br>
+        他低头为你倒酒，手上那枚金戒指闪着光。<br><br>
+        "后悔吗？"他问。<br>
+        你笑着摇头，晃了晃左手无名指上那枚早已被镶嵌进金戒指里的瓶盖。<br><br>
+        "一点都不。毕竟——"<br>
+        "全市最好的三个垃圾桶，也都是我的嫁妆，对吧？"<br><br>
+        <span style="opacity:0.7;">【结局一：少夫人雍容】</span>`,
+    dark: true
+  },
+  final_escape: {
+    title: "逃亡的价码",
+    subtitle: "你以为你能逃。你错了。",
+    body: `你冲上了楼梯，推开铁门，跑进熟悉的街道。<br>
+        然后你发现——<br>
+        卖煎饼的大爷在看你。<br>
+        路口扫地的阿姨在看你。<br>
+        便利店门口的流浪老头在看你。<br>
+        就连树上的那只鸽子……都在看你。<br><br>
+        他们齐齐从怀里掏出一个一模一样的金色徽章。<br>
+        你的手机响了。来电显示是——"他"。<br><br>
+        "乖。回家。"<br>
+        "米其林三星，今晚不会凉的。"<br><br>
+        <span style="opacity:0.7;">【结局二：无处可逃】</span>`,
+    dark: true
+  },
+  final_smart: {
+    title: "与帮主谈判",
+    subtitle: "他挑眉，笑了。",
+    body: `你冷静地问："证据？"<br>
+        他从西装内袋抽出一份厚厚的文件，摔在你面前。<br>
+        第一页——你的通讯录。<br>
+        第二页——你这三天的行程录像。<br>
+        第三页——你昨天吃那个汉堡时的吃相高清特写。<br>
+        第四页……是一份入股协议。<br><br>
+        "签字。"他说。"你一旦签，就是股东。你不签——也是股东。"<br>
+        "只不过，签了的话……"他把一支金笔放到你手里。<br>
+        "你可以抽分红。"<br><br>
+        你看了看文件末尾那个数字。<br>
+        拿起笔。<br><br>
+        <span style="opacity:0.7;">【结局三：人在丐帮，身不由己】</span>`,
+    dark: true
+  }
+};
+
+/* =========================================================================
+   游戏状态
+   ========================================================================= */
+const state = {
+  index: 0,
+  dialogIndex: 0,
+  affection: 40,
+  typing: false,
+  currentScene: null,
+  muted: false,
+  flags: {}
+};
+
+// 音效：用 WebAudio 生成简单音
+let audioCtx = null;
+function ensureAudio() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+  }
+  return audioCtx;
+}
+function beep(freq = 800, duration = 0.04, type = "sine", vol = 0.05) {
+  if (state.muted) return;
+  const ctx = ensureAudio();
+  if (!ctx) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(vol, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start();
+  osc.stop(ctx.currentTime + duration);
+}
+function chord(freqs, duration = 0.3) {
+  if (state.muted) return;
+  freqs.forEach(f => beep(f, duration, "triangle", 0.03));
+}
+
+/* =========================================================================
+   DOM 操作
+   ========================================================================= */
+const $ = id => document.getElementById(id);
+
+function setBackground(bgKey) {
+  $("sceneBg").innerHTML = BACKGROUNDS[bgKey] || "";
+}
+function setCharacter(charKey) {
+  const el = $("character");
+  el.classList.remove("active");
+  setTimeout(() => {
+    el.innerHTML = CHARACTERS[charKey] || "";
+    requestAnimationFrame(() => el.classList.add("active"));
+  }, 200);
+}
+function setSceneTag(tag) {
+  $("sceneTag").textContent = tag;
+}
+function updateMeter() {
+  const pct = Math.max(0, Math.min(100, state.affection));
+  $("meterFill").style.width = pct + "%";
+}
+function showFloater(text, type) {
+  const f = document.createElement("div");
+  f.className = "floater " + type;
+  f.textContent = text;
+  const stage = $("stage");
+  const rect = stage.getBoundingClientRect();
+  f.style.left = (rect.width / 2 - 30) + "px";
+  f.style.top = "40%";
+  stage.appendChild(f);
+  setTimeout(() => f.remove(), 1400);
+}
+
+/* =========================================================================
+   文字逐字显示
+   ========================================================================= */
+function typeText(el, text, cb) {
+  state.typing = true;
+  el.innerHTML = "";
+  const cursor = document.createElement("span");
+  cursor.className = "typed-cursor";
+  el.appendChild(cursor);
+  let i = 0;
+  const speed = 35;
+  function step() {
+    if (i >= text.length) {
+      state.typing = false;
+      cb && cb();
+      return;
+    }
+    const ch = text[i];
+    cursor.insertAdjacentText("beforebegin", ch);
+    if (ch !== "，" && ch !== "。" && ch !== " " && ch !== "—" && ch !== "（" && ch !== "）" && i % 2 === 0) {
+      beep(900 + Math.random() * 200, 0.02, "square", 0.02);
+    }
+    i++;
+    setTimeout(step, ch === "。" ? speed * 4 : ch === "，" ? speed * 2 : speed);
+  }
+  step();
+}
+
+function fastFinish() {
+  if (!state.typing) return false;
+  state.typing = false;
+  return true;
+}
+
+/* =========================================================================
+   场景推进逻辑
+   ========================================================================= */
+function findScene(id) {
+  return SCENES.find(s => s.id === id);
+}
+
+function enterScene(sceneOrIndex) {
+  let scene;
+  if (typeof sceneOrIndex === "number") {
+    scene = SCENES[sceneOrIndex];
+    state.index = sceneOrIndex;
+  } else {
+    scene = sceneOrIndex;
+  }
+  state.currentScene = scene;
+  state.dialogIndex = 0;
+
+  if (scene.preEffect === "flash") {
+    const flash = $("flash");
+    flash.classList.remove("trigger");
+    void flash.offsetWidth;
+    flash.classList.add("trigger");
+    chord([150, 100, 80], 1.2);
+  }
+  if (scene.onEnter === "darkMode") {
+    setTimeout(() => document.body.classList.add("dark-mode"), 800);
+  }
+
+  setTimeout(() => {
+    setSceneTag(scene.tag);
+    setBackground(scene.bg);
+    setCharacter(scene.char);
+    playDialog();
+  }, scene.preEffect === "flash" ? 900 : 0);
+}
+
+function playDialog() {
+  const scene = state.currentScene;
+  const d = scene.dialogs[state.dialogIndex];
+  if (!d) {
+    // 对话完毕
+    if (scene.choices) {
+      showChoices(scene.choices);
+    } else if (scene.autoNext !== undefined) {
+      // 过渡到下一场景
+      setTimeout(() => enterScene(scene.autoNext), 600);
+    }
+    return;
+  }
+  $("speaker").textContent = d.speaker;
+  $("dialogNext").classList.remove("show");
+  typeText($("dialogText"), d.text, () => {
+    $("dialogNext").classList.add("show");
+  });
+}
+
+function advanceDialog() {
+  if (fastFinish()) {
+    // 若正在打字，直接显示完成
+    const scene = state.currentScene;
+    const d = scene.dialogs[state.dialogIndex];
+    $("dialogText").innerHTML = d.text + '<span class="typed-cursor"></span>';
+    $("dialogNext").classList.add("show");
+    return;
+  }
+  const scene = state.currentScene;
+  state.dialogIndex++;
+  if (state.dialogIndex >= scene.dialogs.length) {
+    if (scene.choices) {
+      showChoices(scene.choices);
+    } else if (scene.autoNext !== undefined) {
+      setTimeout(() => enterScene(scene.autoNext), 300);
+    } else {
+      // 查找对应 ending
+      const endingKey = scene.endingKey;
+      if (endingKey) showEnding(endingKey);
+    }
+    return;
+  }
+  playDialog();
+}
+
+function showChoices(choices) {
+  const box = $("choices");
+  box.innerHTML = '<div class="choices-title">❀ 你要怎么回应？ ❀</div>';
+  choices.forEach(c => {
+    const btn = document.createElement("button");
+    btn.className = "choice-btn";
+    btn.textContent = c.text;
+    btn.onclick = () => pickChoice(c);
+    box.appendChild(btn);
+  });
+  box.classList.add("show");
+  chord([500, 700, 900], 0.25);
+}
+
+function pickChoice(choice) {
+  $("choices").classList.remove("show");
+  // 更新好感度
+  if (choice.delta) {
+    state.affection += choice.delta * 7;
+    state.affection = Math.max(0, Math.min(100, state.affection));
+    showFloater(
+      (choice.delta > 0 ? "沦陷度 +" : "沦陷度 ") + (choice.delta * 7),
+      choice.delta > 0 ? "up" : "down"
+    );
+    beep(choice.delta > 0 ? 1200 : 300, 0.15, "sine", 0.05);
+    updateMeter();
+  }
+  if (choice.flag) state.flags[choice.flag] = true;
+  // 跳转
+  const targetId = choice.next;
+  if (ENDINGS[targetId]) {
+    setTimeout(() => showEnding(targetId), 600);
+    return;
+  }
+  const nextScene = findScene(targetId);
+  if (nextScene) {
+    setTimeout(() => enterScene(nextScene), 500);
+  } else {
+    // 按索引前进
+    setTimeout(() => enterScene(state.index + 1), 500);
+  }
+}
+
+function showEnding(key) {
+  const ending = ENDINGS[key];
+  if (!ending) return;
+  const overlay = $("endingOverlay");
+  overlay.classList.remove("hidden");
+  if (ending.dark) overlay.classList.add("dark");
+  $("endingTitle").textContent = ending.title;
+  $("endingSubtitle").textContent = ending.subtitle;
+  $("endingBody").innerHTML = ending.body;
+  chord([220, 330, 440], 1.5);
+}
+
+/* =========================================================================
+   启动
+   ========================================================================= */
+function startGame() {
+  // 恢复音频上下文
+  ensureAudio();
+  if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+
+  $("startOverlay").classList.add("hidden");
+  document.body.classList.remove("dark-mode");
+  state.affection = 40;
+  state.flags = {};
+  updateMeter();
+  enterScene(0);
+}
+
+function restartGame() {
+  $("endingOverlay").classList.add("hidden");
+  $("endingOverlay").classList.remove("dark");
+  document.body.classList.remove("dark-mode");
+  state.affection = 40;
+  state.flags = {};
+  state.index = 0;
+  updateMeter();
+  enterScene(0);
+}
+
+/* 事件绑定 */
+$("startBtn").addEventListener("click", startGame);
+$("restartBtn").addEventListener("click", restartGame);
+
+// 点击对话框推进
+$("dialogBox").addEventListener("click", () => {
+  if ($("choices").classList.contains("show")) return;
+  advanceDialog();
+});
+// 空格 / Enter 推进
+document.addEventListener("keydown", (e) => {
+  if (e.code === "Space" || e.code === "Enter") {
+    if ($("startOverlay").classList.contains("hidden") &&
+        $("endingOverlay").classList.contains("hidden") &&
+        !$("choices").classList.contains("show")) {
+      e.preventDefault();
+      advanceDialog();
+    }
+  }
+});
+
+// 静音切换
+$("muteBtn").addEventListener("click", (e) => {
+  e.stopPropagation();
+  state.muted = !state.muted;
+  $("muteBtn").textContent = state.muted ? "🔕" : "🔔";
+});
+
+// 初始化
+updateMeter();
+
+</script>
+</body>
+</html>
